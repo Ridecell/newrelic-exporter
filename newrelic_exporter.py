@@ -4,12 +4,9 @@ import json
 import time
 import requests
 import click
-import os
 
-from datetime import datetime, timedelta
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
-
 
 class NewrelicCollector(object):
   def __init__(self, apikey, account_number):
@@ -22,7 +19,7 @@ class NewrelicCollector(object):
     
     # The metrics we want to export.
     metrics = {
-        # add the metrics for apdex_target
+        # add the metrics
         'apdexScore': GaugeMetricFamily('newrelic_application_apdex_score',' newrelic application apdex_score', labels=["appname"]),
         'errorRate': GaugeMetricFamily('newrelic_application_error_rate',' newrelic application error_rate', labels=["appname"]),
         'webResponseTimeAverage': GaugeMetricFamily('newrelic_application_response_time','newrelic_application web response time average', labels=["appname"]),
@@ -42,37 +39,29 @@ class NewrelicCollector(object):
           try:
             metric_value = entity.get("apmSummary")[metric]
             if metric == 'webResponseTimeAverage':
-              # Currently apdex_score is in seconds format 
-              # convert apdex_score from seconds to miliseconds
+              # Currently webResponseTimeAverage is in seconds format 
+              # convert webResponseTimeAverage from seconds to miliseconds
               metric_value = metric_value * 1000
             metrics[metric].add_metric([entity["name"]], metric_value)
           except KeyError:
             pass
       yield metrics[metric]
 
-    
-    # Get list of deployment which happened in last 1 hour
-    # Fetch the account number from the environment variable
-    deploymentArray = []
-    newrelic_account_number = int(self.account_number)
-    resp  = requests.post(url=self.graphql_base_url, headers=headers, data='{{actor{{nrql(query:"SELECT * FROM Deployment SINCE 3600 seconds AGO "accounts:{0}){{nrql results}}}}}}'.format(json.dumps(newrelic_account_number)))
-    
-    # Iterate through the deployment results and extract relevant information
-    for deployments in resp.json().get("data").get("actor").get("nrql").get("results"):
-      if resp.json().get("errors"):
-        print("Error getting newrelic deployments:", resp.json())
-        return
-      deploymentArray.append({
-        "name": deployments.get("entity.name"),
-        "timestamp": deployments.get("timestamp"),
-        "version": deployments.get("version")
-      })
-    
     deploymentMetric = GaugeMetricFamily('newrelic_application_deployment',' newrelic application deployment', labels=["appname", "version"])
-    for deployment in deploymentArray:
-      # Passing timestamp as seconds because prometheus client automatically converts timestamp to milliseconds
-      deploymentMetric.add_metric([deployment['name'], deployment['version']], 1, int(deployment['timestamp']/1000))
+    
+    # Fetch the account number from the environment variable
+    timeInSeconds = 36000  # Get list of deployment which happened in last 1 hour
+    resp  = requests.post(url=self.graphql_base_url, headers=headers, data='{{actor{{nrql(query:"SELECT * FROM Deployment SINCE {0} seconds AGO "accounts:{1}){{nrql results}}}}}}'.format(timeInSeconds, int(self.account_number)))
+    if resp.json().get("errors"):
+        print("Error getting newrelic deployment response : ", resp.json())
+        return
+
+    # Iterate through the deployment result and adding relevant information to depoymentMetric
+    for deployments in resp.json().get("data").get("actor").get("nrql").get("results"):
+      print("\ndeplyments : \n", deployments)
+      deploymentMetric.add_metric([deployments.get("entity.name"),deployments.get("version")], int(deployments.get("timestamp") / 1000))
     yield deploymentMetric
+    
     
 @click.command()
 @click.option('--api-key', '-a', envvar='APIKEY', help='API key for newrelic', required=True)

@@ -67,7 +67,7 @@ class NewrelicCollector(object):
 def main(api_key, account_number):   
   collector = NewrelicCollector(api_key, account_number)
   REGISTRY.register(collector)
-  start_http_server(9127)
+  start_http_server(9126)
   while True: 
     time.sleep(1)
     

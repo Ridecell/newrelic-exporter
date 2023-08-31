@@ -57,7 +57,7 @@ class NewrelicCollector(object):
     # Iterate through the deployment result and adding relevant information to depoymentMetric
     for deployments in resp.json().get("data").get("actor").get("nrql").get("results"):
       # Passing timestamp as seconds because prometheus client automatically converts timestamp to milliseconds
-      deploymentMetric.add_metric([deployments.get("entity.name"),deployments.get("version")], int(deployments.get("timestamp") / 1000))
+      deploymentMetric.add_metric([deployments.get("entity.name"),deployments.get("version")],1, int(deployments.get("timestamp") / 1000))
     yield deploymentMetric
     
     
@@ -67,7 +67,7 @@ class NewrelicCollector(object):
 def main(api_key, account_number):   
   collector = NewrelicCollector(api_key, account_number)
   REGISTRY.register(collector)
-  start_http_server(9126)
+  start_http_server(9127)
   while True: 
     time.sleep(1)
     

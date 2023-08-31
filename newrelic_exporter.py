@@ -26,9 +26,8 @@ class NewrelicCollector(object):
         'webThroughput': GaugeMetricFamily('newrelic_application_throughput','newrelic application web throughput', labels=["appname"]),
     }
 
-    # Get all entity Guids
     headers = {'API-Key': self.api_key}
-    resp  = requests.post(url=self.graphql_base_url, headers=headers, data="{actor {entitySearch(queryBuilder: {domain: APM}) {results {entities {... on ApmApplicationEntityOutline {name apmSummary {apdexScore errorRate hostCount instanceCount nonWebResponseTimeAverage nonWebThroughput responseTimeAverage throughput webResponseTimeAverage webThroughput}} guid}}}}}")
+    resp  = requests.post(url=self.graphql_base_url, headers=headers, data="{actor {entitySearch(queryBuilder: {domain: APM}) {results {entities { ... on ApmApplicationEntityOutline {name apmSummary { apdexScore errorRate webResponseTimeAverage webThroughput}}}}}}}")
     if resp.json().get("errors"):
       print("Error getting newrelic entities:", resp.json())
       return
@@ -49,16 +48,15 @@ class NewrelicCollector(object):
 
     deploymentMetric = GaugeMetricFamily('newrelic_application_deployment',' newrelic application deployment', labels=["appname", "version"])
     
-    # Fetch the account number from the environment variable
-    timeInSeconds = 36000  # Get list of deployment which happened in last 1 hour
-    resp  = requests.post(url=self.graphql_base_url, headers=headers, data='{{actor{{nrql(query:"SELECT * FROM Deployment SINCE {0} seconds AGO "accounts:{1}){{nrql results}}}}}}'.format(timeInSeconds, int(self.account_number)))
+    timeInSeconds = 3600  # Get list of deployment which happened in last 1 hour
+    resp  = requests.post(url=self.graphql_base_url, headers=headers, data='{{actor{{nrql(query:"SELECT * FROM Deployment SINCE {0} seconds AGO "accounts:{1}){{nrql results}}}}}}'.format(timeInSeconds,self.account_number))
     if resp.json().get("errors"):
         print("Error getting newrelic deployment response : ", resp.json())
         return
 
     # Iterate through the deployment result and adding relevant information to depoymentMetric
     for deployments in resp.json().get("data").get("actor").get("nrql").get("results"):
-      print("\ndeplyments : \n", deployments)
+      # Passing timestamp as seconds because prometheus client automatically converts timestamp to milliseconds
       deploymentMetric.add_metric([deployments.get("entity.name"),deployments.get("version")], int(deployments.get("timestamp") / 1000))
     yield deploymentMetric
     

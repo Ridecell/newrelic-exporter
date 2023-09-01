@@ -20,7 +20,7 @@ class NewrelicCollector(object):
     metrics = {
         # add the metrics
         'errorRate': GaugeMetricFamily('newrelic_application_error_rate',' newrelic application error rate', labels=["appname"]),
-        'webResponseTimeAverage': GaugeMetricFamily('newrelic_application_response_time','newrelic application web response time average', labels=["appname"]),
+        'webResponseTimeAverage': GaugeMetricFamily('newrelic_application_web_response_time','newrelic application web response time average', labels=["appname"]),
         'webThroughput': GaugeMetricFamily('newrelic_application_web_throughput','newrelic application web throughput', labels=["appname"]),
         'nonWebThroughput': GaugeMetricFamily('newrelic_application_nonweb_throughput','newrelic application non web throughput', labels=["appname"]),
         'nonWebResponseTimeAverage': GaugeMetricFamily('newrelic_application_nonweb_response_time','newrelic application non web response time average', labels=["appname"]),

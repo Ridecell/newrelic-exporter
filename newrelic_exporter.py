@@ -19,11 +19,11 @@ class NewrelicCollector(object):
     # The metrics we want to export.
     metrics = {
         # add the metrics
-        'errorRate': GaugeMetricFamily('newrelic_application_error_rate',' newrelic application error_rate', labels=["appname"]),
-        'webResponseTimeAverage': GaugeMetricFamily('newrelic_application_response_time','newrelic_application web response time average', labels=["appname"]),
-        'webThroughput': GaugeMetricFamily('newrelic_application_throughput','newrelic application web throughput', labels=["appname"]),
-        'nonWebThroughput': GaugeMetricFamily('newrelic_nonweb_throughput','newrelic applicaiotn non web throughput', labels=["appname"]),
-        'nonWebResponseTimeAverage': GaugeMetricFamily('newrelic_nonweb_response_time_average','newrelic nonweb response time average', labels=["appname"]),
+        'errorRate': GaugeMetricFamily('newrelic_application_error_rate',' newrelic application error rate', labels=["appname"]),
+        'webResponseTimeAverage': GaugeMetricFamily('newrelic_application_response_time','newrelic application web response time average', labels=["appname"]),
+        'webThroughput': GaugeMetricFamily('newrelic_application_web_throughput','newrelic application web throughput', labels=["appname"]),
+        'nonWebThroughput': GaugeMetricFamily('newrelic_nonweb_throughput','newrelic application non web throughput', labels=["appname"]),
+        'nonWebResponseTimeAverage': GaugeMetricFamily('newrelic_nonweb_response_time','newrelic application non web response time average', labels=["appname"]),
    }
 
     headers = {'API-Key': self.api_key}
@@ -82,8 +82,8 @@ class NewrelicCollector(object):
                                       results
                                       }}
                                   }}
-                              }}"""
-    resp  = requests.post(url=self.graphql_base_url, headers=headers, data=deploymentGraphQuery.format(timeInSeconds,self.account_number))
+                              }}""".format(timeInSeconds,self.account_number)
+    resp  = requests.post(url=self.graphql_base_url, headers=headers, data=deploymentGraphQuery)
     
     if resp.json().get("errors"):
         print("Error getting newrelic deployment response : ", resp.json())
